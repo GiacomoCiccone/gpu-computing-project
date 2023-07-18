@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "render_option.h"
+#include "ray.cuh"
 
 #define checkCudaErrors(val) check_cuda( (val), #val, __FILE__, __LINE__ )
 
@@ -19,7 +20,13 @@ int main(int argc, char** argv) {
 
     std::cout << "Options: " << options << std::endl;
 
+    Ray ray(Vec3(0, 0, 0), unitVector(Vec3(1, 1, 1)));
+    std::cout << ray << std::endl;
+    Ray reflected_ray = reflect(ray, Vec3(0, 1, 0));
+    std::cout << reflected_ray << std::endl;
+    Ray refracted_ray;
+    refract(ray, Vec3(0, 1, 0), .04, refracted_ray);
+    std::cout << refracted_ray << std::endl;
 
 
-    
 }

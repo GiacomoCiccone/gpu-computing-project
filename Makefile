@@ -4,7 +4,7 @@ SRC_DIR = src
 BUILD_DIR = build
 
 SRCS = $(SRC_DIR)/main.cu
-INCS = $(SRC_DIR)/render_option.h
+INCS = $(wildcard $(SRC_DIR)/*.h) $(wildcard $(SRC_DIR)/*.cuh)
 
 
 .PHONY: all
