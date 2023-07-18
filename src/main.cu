@@ -2,6 +2,7 @@
 
 #include "render_option.h"
 #include "ray.cuh"
+#include "random.cuh"
 
 #define checkCudaErrors(val) check_cuda( (val), #val, __FILE__, __LINE__ )
 
@@ -14,19 +15,28 @@ void check_cuda(cudaError_t result, char const *const func, const char *const fi
     }
 }
 
+__global__ void dummyKernel(curandState *rand_state) {
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    curand_init(1984, i, 0, &rand_state[i]);
+
+    printf("Random number GPU: %f\n", randf(&rand_state[i]));
+
+    printf("Random vec3 GPU: %f %f %f\n", randVec3(&rand_state[i]).x(), randVec3(&rand_state[i]).y(), randVec3(&rand_state[i]).z());
+
+}
 
 int main(int argc, char** argv) {
-    RenderOption options = RenderOption::parseCommandLine(argc, argv);
 
-    std::cout << "Options: " << options << std::endl;
+    std::cout << "Random number CPU: " << randf() << "\n";
 
-    Ray ray(Vec3(0, 0, 0), unitVector(Vec3(1, 1, 1)));
-    std::cout << ray << std::endl;
-    Ray reflected_ray = reflect(ray, Vec3(0, 1, 0));
-    std::cout << reflected_ray << std::endl;
-    Ray refracted_ray;
-    refract(ray, Vec3(0, 1, 0), .04, refracted_ray);
-    std::cout << refracted_ray << std::endl;
+    std::cout << "Random vec3 CPU: " << randVec3() << "\n";
+
+    curandState *d_rand_state;
+    checkCudaErrors(cudaMalloc((void **)&d_rand_state, sizeof(curandState)));
+
+    dummyKernel<<<1, 1>>>(d_rand_state);
+    checkCudaErrors(cudaDeviceSynchronize());
 
 
+    return 0;
 }
