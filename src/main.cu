@@ -1,48 +1,105 @@
 #include <iostream>
+#include <fstream>
 
 #include "render_option.h"
-#include "ray.cuh"
-#include "random.cuh"
 #include "camera.cuh"
+#include "cuda_helpers.cuh"
+#include "scene.cuh"
+#include "render.cuh"
 
-#define checkCudaErrors(val) check_cuda( (val), #val, __FILE__, __LINE__ )
-
-void check_cuda(cudaError_t result, char const *const func, const char *const file, int const line) {
-    if (result) {
-        std::cerr << "CUDA error = " << static_cast<unsigned int>(result) << " at " <<
-            file << ":" << line << " '" << func << "' \n";
-        cudaDeviceReset();
-        exit(EXIT_FAILURE);
-    }
-}
-
-__global__ void dummyKernel(curandState *rand_state) {
-    int i = threadIdx.x + blockIdx.x * blockDim.x;
-    curand_init(1984, i, 0, &rand_state[i]);
-
-    Camera cam(Vec3(0, 0, 0), Vec3(0, 0, -1), Vec3(0, 1, 0), 90, 1, 10, 1);
-    Ray r = cam.getRay(&rand_state[i], 0.5, 0.5);
-    printf("Ray GPU: %f %f %f", r.origin().x(), r.origin().y(), r.origin().z());
-    printf("   %f %f %f\n", r.direction().x(), r.direction().y(), r.direction().z());
-
-    printf("Random number GPU: %f\n", randf(&rand_state[i]));
-
-    printf("Random vec3 GPU: %f %f %f\n", randVec3(&rand_state[i]).x(), randVec3(&rand_state[i]).y(), randVec3(&rand_state[i]).z());
-
-}
 
 int main(int argc, char** argv) {
+    // warm up GPU
+    cudaFree(0);
 
-    std::cout << "Random number CPU: " << randf() << "\n";
+    RenderOption opt = RenderOption::parseCommandLine(argc, argv);
+    int nx = opt.width;
+    int ny = opt.height;
+    int ns = opt.num_samples;
+    int num_pixels = nx * ny;
+    size_t fb_size = num_pixels * sizeof(Color);
+    opt.use_gpu = true;
 
-    std::cout << "Random vec3 CPU: " << randVec3() << "\n";
+    // allocate FB
+    Color* fb;
+    checkCudaErrors(cudaMallocManaged((void**)&fb, fb_size));
 
-    curandState *d_rand_state;
-    checkCudaErrors(cudaMalloc((void **)&d_rand_state, sizeof(curandState)));
+    if (opt.use_gpu) {
+        std::cout << "Rendering a " << nx << "x" << ny << " image with " << ns << " samples per pixel on GPU\n";
+        int tx = 8;
+        int ty = 8;
 
-    dummyKernel<<<1, 1>>>(d_rand_state);
-    checkCudaErrors(cudaDeviceSynchronize());
+        // allocate random state
+        curandState* d_rand_state;
+        checkCudaErrors(cudaMalloc((void**)&d_rand_state, num_pixels * sizeof(curandState)));
 
+        // create world
+        Hittable** d_list;
+        checkCudaErrors(cudaMalloc((void**)&d_list, 5 * sizeof(Hittable*)));
+        Hittable** d_world;
+        checkCudaErrors(cudaMalloc((void**)&d_world, sizeof(Hittable*)));
+        Camera** d_camera;
+        checkCudaErrors(cudaMalloc((void**)&d_camera, sizeof(Camera*)));
+        g_createWorld<<<1, 1>>>(d_list, d_world, d_camera, nx, ny, d_rand_state);
 
+        // render our buffer
+        dim3 blocks(nx / tx + 1, ny / ty + 1);
+        dim3 threads(tx, ty);
+        
+        double start_time = clock();
+        g_renderInit<<<blocks, threads>>>(nx, ny, d_rand_state);
+        g_render<<<blocks, threads>>>(nx, ny, ns, opt.max_depth, d_camera, d_world, d_rand_state, fb);
+        checkCudaErrors(cudaDeviceSynchronize());
+        double end_time = clock();
+        std::cout << "Render time on GPU: " << (end_time - start_time) / CLOCKS_PER_SEC << "s\n";
+
+        // // clean up
+        g_freeWorld<<<1, 1>>>(d_list, d_world, d_camera);
+        checkCudaErrors(cudaDeviceSynchronize());
+        checkCudaErrors(cudaFree(d_rand_state));
+        checkCudaErrors(cudaFree(d_list));
+        checkCudaErrors(cudaFree(d_world));
+        checkCudaErrors(cudaFree(d_camera));
+    } else {
+        std::cout << "Rendering a " << nx << "x" << ny << " image with " << ns << " samples per pixel on CPU\n";
+
+        // create world
+        Hittable** list = new Hittable*[5];
+        Hittable** world = new Hittable*[1];
+        Camera** camera = new Camera*[1];
+        createWorld(list, world, camera, nx, ny);
+
+        // render our buffer
+        double start_time = clock();
+        render(nx, ny, ns, opt.max_depth, camera, world, fb);
+        double end_time = clock();
+        std::cout << "Render time on CPU: " << (end_time - start_time) / CLOCKS_PER_SEC << "s\n";
+
+        // clean up
+        freeWorld(list, world, camera);
+        delete[] list;
+        delete[] world;
+        delete[] camera;
+    }
+
+    // Output FB as Image
+    std::ofstream ofs;
+    ofs.open(opt.output_file);
+    ofs << "P3\n" << nx << " " << ny << "\n255\n";
+    for (int j = ny - 1; j >= 0; j--) {
+        for (int i = 0; i < nx; i++) {
+            size_t pixel_index = j * nx + i;
+            int ir = int(255.99 * fb[pixel_index].x());
+            int ig = int(255.99 * fb[pixel_index].y());
+            int ib = int(255.99 * fb[pixel_index].z());
+            ofs << ir << " " << ig << " " << ib << "\n";
+        }
+    }
+    std::cout << "Image written to " << opt.output_file << std::endl;
+
+    // clean up    
+    ofs.close();
+    checkCudaErrors(cudaFree(fb));
+    cudaDeviceReset();
     return 0;
 }
