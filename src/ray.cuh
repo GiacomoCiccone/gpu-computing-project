@@ -5,13 +5,13 @@
 class Ray {
 public:
     __host__ __device__ Ray() {}
-    __host__ __device__ Ray(const Vec3& a, const Vec3& b) { A = a; B = b; }
-    __host__ __device__ inline Vec3 origin() const { return A; }
+    __host__ __device__ Ray(const Point3& a, const Vec3& b) { A = a; B = b; }
+    __host__ __device__ inline Point3 origin() const { return A; }
     __host__ __device__ inline Vec3 direction() const { return B; }
-    __host__ __device__ inline Vec3 pointAt(float t) const { return A + t * B; }
+    __host__ __device__ inline Point3 pointAt(float t) const { return A + t * B; }
 
 private:
-    Vec3 A;
+    Point3 A;
     Vec3 B;
 };
 
