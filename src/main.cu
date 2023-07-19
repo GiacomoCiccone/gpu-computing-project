@@ -18,7 +18,6 @@ int main(int argc, char** argv) {
     int ns = opt.num_samples;
     int num_pixels = nx * ny;
     size_t fb_size = num_pixels * sizeof(Color);
-    opt.use_gpu = true;
 
     // allocate FB
     Color* fb;
@@ -29,19 +28,25 @@ int main(int argc, char** argv) {
         int tx = 8;
         int ty = 8;
 
-        // allocate random state
-        curandState* d_rand_state;
-        checkCudaErrors(cudaMalloc((void**)&d_rand_state, num_pixels * sizeof(curandState)));
+
+        // allocate random state for creating world
+        curandState* d_rand_state_world;
+        checkCudaErrors(cudaMalloc((void**)&d_rand_state_world, sizeof(curandState)));
 
         // create world
         Hittable** d_list;
-        checkCudaErrors(cudaMalloc((void**)&d_list, 5 * sizeof(Hittable*)));
+        //checkCudaErrors(cudaMalloc((void**)&d_list, 5 * sizeof(Hittable*)));
+        checkCudaErrors(cudaMalloc((void**)&d_list, (22 * 22 + 1 + 3) * sizeof(Hittable*)));
         Hittable** d_world;
         checkCudaErrors(cudaMalloc((void**)&d_world, sizeof(Hittable*)));
         Camera** d_camera;
         checkCudaErrors(cudaMalloc((void**)&d_camera, sizeof(Camera*)));
-        g_createWorld<<<1, 1>>>(d_list, d_world, d_camera, nx, ny, d_rand_state);
+        g_createWorld<<<1, 1>>>(d_list, d_world, d_camera, nx, ny, d_rand_state_world);
 
+        // allocate random state for rendering
+        curandState* d_rand_state;
+        checkCudaErrors(cudaMalloc((void**)&d_rand_state, num_pixels * sizeof(curandState)));
+        
         // render our buffer
         dim3 blocks(nx / tx + 1, ny / ty + 1);
         dim3 threads(tx, ty);
@@ -57,6 +62,7 @@ int main(int argc, char** argv) {
         g_freeWorld<<<1, 1>>>(d_list, d_world, d_camera);
         checkCudaErrors(cudaDeviceSynchronize());
         checkCudaErrors(cudaFree(d_rand_state));
+        checkCudaErrors(cudaFree(d_rand_state_world));
         checkCudaErrors(cudaFree(d_list));
         checkCudaErrors(cudaFree(d_world));
         checkCudaErrors(cudaFree(d_camera));
@@ -64,7 +70,7 @@ int main(int argc, char** argv) {
         std::cout << "Rendering a " << nx << "x" << ny << " image with " << ns << " samples per pixel on CPU\n";
 
         // create world
-        Hittable** list = new Hittable*[5];
+        Hittable** list = new Hittable*[22*22+1+3];
         Hittable** world = new Hittable*[1];
         Camera** camera = new Camera*[1];
         createWorld(list, world, camera, nx, ny);

@@ -1,6 +1,6 @@
 ARCH_FLAGS = -arch=sm_86
-DEBUG_FLAGS = -g -G
-# DEBUG_FLAGS = -O3
+#DEBUG_FLAGS = -g -G
+DEBUG_FLAGS = -O3
 
 SRC_DIR = src
 BUILD_DIR = build

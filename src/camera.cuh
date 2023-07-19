@@ -37,7 +37,7 @@ class Camera {
     }
 
     __device__ Ray getRay(curandState *local_rand_state, float s,
-                          float t) const {                            
+                          float t) const {
         Vec3 rd = lens_radius * randInUnitDisk(local_rand_state);
         Vec3 offset = u * rd.x() + v * rd.y();
 

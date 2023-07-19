@@ -3,18 +3,23 @@
 #include "hittable.cuh"
 
 class HittableList : public Hittable {
-public:
+  public:
     __host__ __device__ HittableList() {}
-    __host__ __device__ HittableList(Hittable** l, int n) { list = l; list_size = n; }
-    
-    __host__ __device__ virtual bool hit(const Ray& r, float t_min, float t_max, HitRecord& rec) const override;
+    __host__ __device__ HittableList(Hittable **l, int n) {
+        list = l;
+        list_size = n;
+    }
 
-private:
-    Hittable** list;
+    __host__ __device__ virtual bool hit(const Ray &r, float t_min, float t_max,
+                                         HitRecord &rec) const override;
+
+  private:
+    Hittable **list;
     int list_size;
 };
 
-__host__ __device__ bool HittableList::hit(const Ray& r, float t_min, float t_max, HitRecord& rec) const {
+__host__ __device__ bool HittableList::hit(const Ray &r, float t_min,
+                                           float t_max, HitRecord &rec) const {
     HitRecord temp_rec;
     bool hit_anything = false;
     float closest_so_far = t_max;

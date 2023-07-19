@@ -1,20 +1,25 @@
 #pragma once
 
-#include "ray.cuh"
 #include "hittable.cuh"
 #include "random.cuh"
+#include "ray.cuh"
 
 class Material {
-public:
-    __device__ virtual bool scatter(curandState_t* randState, const Ray& rayIn, const HitRecord& rec, Color& attenuation, Ray& scattered) const = 0;
-    virtual bool scatter(const Ray& rayIn, const HitRecord& rec, Color& attenuation, Ray& scattered) const = 0;
+  public:
+    __device__ virtual bool scatter(curandState_t *randState, const Ray &rayIn,
+                                    const HitRecord &rec, Color &attenuation,
+                                    Ray &scattered) const = 0;
+    virtual bool scatter(const Ray &rayIn, const HitRecord &rec,
+                         Color &attenuation, Ray &scattered) const = 0;
 };
 
 class Lambertian : public Material {
-public:
-    __host__ __device__ Lambertian(const Color& a) : albedo(a) {}
+  public:
+    __host__ __device__ Lambertian(const Color &a) : albedo(a) {}
 
-    __device__ virtual bool scatter(curandState_t* randState, const Ray& rayIn, const HitRecord& rec, Color& attenuation, Ray& scattered) const override {
+    __device__ virtual bool scatter(curandState_t *randState, const Ray &rayIn,
+                                    const HitRecord &rec, Color &attenuation,
+                                    Ray &scattered) const override {
         Vec3 scatterDirection = rec.normal + randUnitVector(randState);
         if (scatterDirection.nearZero()) {
             scatterDirection = rec.normal;
@@ -24,7 +29,8 @@ public:
         return true;
     }
 
-    virtual bool scatter(const Ray& rayIn, const HitRecord& rec, Color& attenuation, Ray& scattered) const override {
+    virtual bool scatter(const Ray &rayIn, const HitRecord &rec,
+                         Color &attenuation, Ray &scattered) const override {
         Vec3 scatterDirection = rec.normal + randUnitVector();
         if (scatterDirection.nearZero()) {
             scatterDirection = rec.normal;
@@ -34,38 +40,45 @@ public:
         return true;
     }
 
-private:
+  private:
     Color albedo;
 };
 
 class Metal : public Material {
-public:
-    __host__ __device__ Metal(const Color& a, float f) : albedo(a), fuzz(f < 1 ? f : 1) {}
+  public:
+    __host__ __device__ Metal(const Color &a, float f)
+        : albedo(a), fuzz(f < 1 ? f : 1) {}
 
-    __device__ virtual bool scatter(curandState_t* randState, const Ray& rayIn, const HitRecord& rec, Color& attenuation, Ray& scattered) const override {
+    __device__ virtual bool scatter(curandState_t *randState, const Ray &rayIn,
+                                    const HitRecord &rec, Color &attenuation,
+                                    Ray &scattered) const override {
         Vec3 reflected = reflect(unitVector(rayIn.direction()), rec.normal);
         scattered = Ray(rec.p, reflected + fuzz * randInUnitSphere(randState));
         attenuation = albedo;
         return (dot(scattered.direction(), rec.normal) > 0);
     }
 
-    virtual bool scatter(const Ray& rayIn, const HitRecord& rec, Color& attenuation, Ray& scattered) const override {
-        Vec3 reflected = reflect(unitVector(rayIn.direction()), rec.normal);    
+    virtual bool scatter(const Ray &rayIn, const HitRecord &rec,
+                         Color &attenuation, Ray &scattered) const override {
+        Vec3 reflected = reflect(unitVector(rayIn.direction()), rec.normal);
         scattered = Ray(rec.p, reflected + fuzz * randInUnitSphere());
         attenuation = albedo;
         return (dot(scattered.direction(), rec.normal) > 0);
     }
 
-private:
+  private:
     Color albedo;
     float fuzz;
 };
 
 class Dielectric : public Material {
-public:
-    __host__ __device__ Dielectric(float index_of_refraction) : ir(index_of_refraction) {}
+  public:
+    __host__ __device__ Dielectric(float index_of_refraction)
+        : ir(index_of_refraction) {}
 
-    __device__ virtual bool scatter(curandState_t* randState, const Ray& rayIn, const HitRecord& rec, Color& attenuation, Ray& scattered) const override {
+    __device__ virtual bool scatter(curandState_t *randState, const Ray &rayIn,
+                                    const HitRecord &rec, Color &attenuation,
+                                    Ray &scattered) const override {
         attenuation = Color(1.0, 1.0, 1.0);
         float refractionRatio = rec.frontFace ? (1.0 / ir) : ir;
 
@@ -76,10 +89,10 @@ public:
         bool cannotRefract = refractionRatio * sinTheta > 1.0;
         Vec3 direction;
 
-        if (cannotRefract || reflectance(cosTheta, refractionRatio) > randf(randState)) {
+        if (cannotRefract ||
+            reflectance(cosTheta, refractionRatio) > randf(randState)) {
             direction = reflect(unitDirection, rec.normal);
-        }
-        else {
+        } else {
             refract(unitDirection, rec.normal, refractionRatio, direction);
         }
 
@@ -87,7 +100,8 @@ public:
         return true;
     }
 
-    virtual bool scatter(const Ray& rayIn, const HitRecord& rec, Color& attenuation, Ray& scattered) const override {
+    virtual bool scatter(const Ray &rayIn, const HitRecord &rec,
+                         Color &attenuation, Ray &scattered) const override {
         attenuation = Color(1.0, 1.0, 1.0);
         float refractionRatio = rec.frontFace ? (1.0 / ir) : ir;
 
@@ -100,8 +114,7 @@ public:
 
         if (cannotRefract || reflectance(cosTheta, refractionRatio) > randf()) {
             direction = reflect(unitDirection, rec.normal);
-        }
-        else {
+        } else {
             refract(unitDirection, rec.normal, refractionRatio, direction);
         }
 
@@ -109,7 +122,7 @@ public:
         return true;
     }
 
-private:
+  private:
     float ir; // Index of Refraction
 
     __host__ __device__ static float reflectance(float cosine, float ref_idx) {

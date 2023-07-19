@@ -11,9 +11,7 @@ class Ray {
     }
     __host__ __device__ inline Point3 origin() const { return A; }
     __host__ __device__ inline Vec3 direction() const { return B; }
-    __host__ __device__ inline Point3 at(float t) const {
-        return A + t * B;
-    }
+    __host__ __device__ inline Point3 at(float t) const { return A + t * B; }
 
   private:
     Point3 A;
