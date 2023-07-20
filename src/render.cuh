@@ -64,6 +64,7 @@ Color rayColor(const Ray &r, Hittable **world, int depth) {
     return c;
 }
 
+
 __global__ void g_render(int max_x, int max_y, int ns, int max_depth,
                          Camera **cam, Hittable **world,
                          curandState *rand_state, Color *fb) {

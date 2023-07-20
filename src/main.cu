@@ -8,6 +8,7 @@
 #include "render.cuh"
 
 
+
 int main(int argc, char** argv) {
     // warm up GPU
     cudaFree(0);
@@ -24,10 +25,8 @@ int main(int argc, char** argv) {
     checkCudaErrors(cudaMallocManaged((void**)&fb, fb_size));
 
     if (opt.use_gpu) {
-        std::cout << "Rendering a " << nx << "x" << ny << " image with " << ns << " samples per pixel on GPU\n";
         int tx = 8;
         int ty = 8;
-
 
         // allocate random state for creating world
         curandState* d_rand_state_world;
@@ -42,6 +41,7 @@ int main(int argc, char** argv) {
         Camera** d_camera;
         checkCudaErrors(cudaMalloc((void**)&d_camera, sizeof(Camera*)));
         g_createWorld<<<1, 1>>>(d_list, d_world, d_camera, nx, ny, d_rand_state_world);
+        checkCudaErrors(cudaDeviceSynchronize());
 
         // allocate random state for rendering
         curandState* d_rand_state;
@@ -53,12 +53,14 @@ int main(int argc, char** argv) {
         
         double start_time = clock();
         g_renderInit<<<blocks, threads>>>(nx, ny, d_rand_state);
+        checkCudaErrors(cudaDeviceSynchronize());
+
         g_render<<<blocks, threads>>>(nx, ny, ns, opt.max_depth, d_camera, d_world, d_rand_state, fb);
         checkCudaErrors(cudaDeviceSynchronize());
         double end_time = clock();
         std::cout << "Render time on GPU: " << (end_time - start_time) / CLOCKS_PER_SEC << "s\n";
 
-        // // clean up
+        // clean up
         g_freeWorld<<<1, 1>>>(d_list, d_world, d_camera);
         checkCudaErrors(cudaDeviceSynchronize());
         checkCudaErrors(cudaFree(d_rand_state));
