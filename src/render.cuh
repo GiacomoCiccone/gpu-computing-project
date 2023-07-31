@@ -6,6 +6,7 @@
 #include "material.cuh"
 #include "ray.cuh"
 
+// Inizializza il generatore di numeri casuali per ogni thread
 __global__ void g_renderInit(int max_x, int max_y, curandState *rand_state) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
@@ -15,10 +16,11 @@ __global__ void g_renderInit(int max_x, int max_y, curandState *rand_state) {
     curand_init(1984, pixel_index, 0, &rand_state[pixel_index]);
 }
 
+// Restituisce il colore del raggio di luce r tracciato nella scena
 __device__ Color rayColor(const Ray &r, Hittable **world,
                           curandState *local_rand_state, int max_depth) {
     Ray cur_ray = r;
-    Color cur_attenuation = Color(1.0, 1.0, 1.0);
+    Color cur_attenuation = Color(1.0f, 1.0f, 1.0f);
     for (int i = 0; i < max_depth; i++) {
         HitRecord rec;
         if ((*world)->hit(cur_ray, 0.001f, INFINITY, rec)) {
@@ -29,7 +31,7 @@ __device__ Color rayColor(const Ray &r, Hittable **world,
                 cur_attenuation *= attenuation;
                 cur_ray = scattered;
             } else {
-                return Color(0.0, 0.0, 0.0);
+                return Color(0.0f, 0.0f, 0.0f);
             }
         } else {
             Vec3 unit_direction = unitVector(cur_ray.direction());
@@ -39,7 +41,7 @@ __device__ Color rayColor(const Ray &r, Hittable **world,
             return cur_attenuation * c;
         }
     }
-    return Color(0.0, 0.0, 0.0);
+    return Color(0.0f, 0.0f, 0.0f);
 }
 
 // use recursion
@@ -64,7 +66,10 @@ Color rayColor(const Ray &r, Hittable **world, int depth) {
     return c;
 }
 
-
+// Crea un raggio a partire dalla camera e parametrizzato in base al thread
+// corrente e lo lancia nella scena.
+// Il numero di raggi lanciati è definito da ns che indica il
+// numero di samples per pixel
 __global__ void g_render(int max_x, int max_y, int ns, int max_depth,
                          Camera **cam, Hittable **world,
                          curandState *rand_state, Color *fb) {
@@ -74,7 +79,7 @@ __global__ void g_render(int max_x, int max_y, int ns, int max_depth,
         return;
     int pixel_index = j * max_x + i;
     curandState local_rand_state = rand_state[pixel_index];
-    Color col(0, 0, 0);
+    Color col(0.0f, 0.0f, 0.0f);
     for (int s = 0; s < ns; s++) {
         float u = float(i + randf(&local_rand_state)) / float(max_x);
         float v = float(j + randf(&local_rand_state)) / float(max_y);

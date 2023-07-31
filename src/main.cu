@@ -8,7 +8,6 @@
 #include "render.cuh"
 
 
-
 int main(int argc, char** argv) {
     // warm up GPU
     cudaFree(0);

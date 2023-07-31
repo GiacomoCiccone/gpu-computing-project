@@ -4,6 +4,10 @@
 #include <math.h>
 #include <stdlib.h>
 
+// Classe che rappresenta un vettore 3D.
+// Per semplicità viene usata anche per rappresentare un punto 3D e un colore.
+// Implementa diversi metodi utili per la gestione di vettori 3D ad esempio
+// prodotto scalare, prodotto vettoriale, normalizzazione, ecc.
 class Vec3 {
   public:
     __host__ __device__ Vec3() {}

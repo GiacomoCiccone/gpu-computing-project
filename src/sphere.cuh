@@ -2,6 +2,7 @@
 
 #include "hittable.cuh"
 
+// Classe che rappresenta una sfera
 class Sphere : public Hittable {
   public:
     __host__ __device__ Sphere() {}
@@ -19,6 +20,8 @@ class Sphere : public Hittable {
     Material *mat_ptr;
 };
 
+// L'intersezione è data dalla soluzione dell'equazione quadratica che
+// rappresenta la sfera
 __host__ __device__ bool Sphere::hit(const Ray &r, float t_min, float t_max,
                                      HitRecord &rec) const {
     Vec3 oc = r.origin() - center;
@@ -27,7 +30,7 @@ __host__ __device__ bool Sphere::hit(const Ray &r, float t_min, float t_max,
     float c = oc.squaredLength() - radius * radius;
 
     float discriminant = half_b * half_b - a * c;
-    if (discriminant < 0)
+    if (discriminant < 0.0f)
         return false;
     float sqrtd = sqrt(discriminant);
 

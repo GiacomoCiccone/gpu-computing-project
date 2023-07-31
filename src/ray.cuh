@@ -2,6 +2,7 @@
 
 #include "vec3.cuh"
 
+// Classe che rappresenta un raggio con origine e direzione
 class Ray {
   public:
     __host__ __device__ Ray() {}

@@ -4,6 +4,12 @@
 
 #include "vec3.cuh"
 
+// Questo file contiene funzioni per generare numeri casuali
+// sia sulla CPU che sulla GPU
+// Le interfacce sono le stesse, ma le funzioni per la GPU hanno
+// un parametro aggiuntivo che è lo stato del generatore di numeri del thread
+// corrente
+
 float randf() { return (float)rand() / RAND_MAX; }
 
 __device__ float randf(curandState *state) { return curand_uniform(state); }

@@ -2,6 +2,8 @@
 
 #include "hittable.cuh"
 
+// Classe che rappresenta una lista di oggetti Hittable e semplifica la
+// ricerca dell'oggetto più vicino al raggio
 class HittableList : public Hittable {
   public:
     __host__ __device__ HittableList() {}

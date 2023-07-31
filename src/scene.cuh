@@ -34,6 +34,7 @@
 
 #define RND (randf(rand_state))
 
+// Crea la scena con le sfere fornita da Peter Shirley
 __global__ void g_createWorld(Hittable **d_list, Hittable **d_world,
                               Camera **d_camera, int width, int height,
                               curandState *rand_state) {
@@ -43,7 +44,7 @@ __global__ void g_createWorld(Hittable **d_list, Hittable **d_world,
                                new Lambertian(Color(0.5, 0.5, 0.5)));
         int i = 1;
 
-        #pragma unroll
+#pragma unroll
         for (int a = -11; a < 11; a++) {
             for (int b = -11; b < 11; b++) {
                 float choose_mat = RND;
@@ -147,11 +148,13 @@ void createWorld(Hittable **list, Hittable **world, Camera **camera, int widht,
                          float(widht) / float(weight), aperture, dist_to_focus);
 }
 
+// Liberare la memoria
 __global__ void g_freeWorld(Hittable **d_list, Hittable **d_world,
                             Camera **d_camera) {
     // for (int i = 0; i < 5; i++) {
 
-    #pragma unroll
+#pragma unroll // il valore è noto a compile time per cui è possibile
+               // sfruttare l'unrolling
     for (int i = 0; i < 22 * 22 + 1 + 3; i++) {
         delete ((Sphere *)d_list[i])->mat_ptr;
         delete d_list[i];

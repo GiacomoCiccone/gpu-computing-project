@@ -3,10 +3,14 @@
 #include "random.cuh"
 #include "ray.cuh"
 
+// Converte un angolo in gradi in radianti
 #define DEG_TO_RAD(degrees) ((degrees)*M_PI / 180.0f)
 
 class Camera {
   public:
+    // Costruisce una camera di tipo lookfrom -> lookat
+    // Questa camera non è la classica pinhole, ma ha un'apertura che permette
+    // di simulare la profondità di campo
     __host__ __device__ Camera(Point3 lookfrom, Point3 lookat, Vec3 vup,
                                float vfov, float aspect_ratio, float aperture,
                                float focus_dist) {
@@ -28,6 +32,9 @@ class Camera {
         lens_radius = aperture / 2;
     }
 
+    // Genera un raggio che parte dall'origine della camera e passa per il pixel
+    // (s,t) della viewport L'origine del raggio è spostata di un valore casuale
+    // all'interno del disco di apertura della camera
     Ray getRay(float s, float t) const {
         Vec3 rd = lens_radius * randInUnitDisk();
         Vec3 offset = u * rd.x() + v * rd.y();
