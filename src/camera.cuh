@@ -3,6 +3,10 @@
 #include "random.cuh"
 #include "ray.cuh"
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 // Converte un angolo in gradi in radianti
 #define DEG_TO_RAD(degrees) ((degrees)*M_PI / 180.0f)
 
