@@ -1,5 +1,5 @@
 # Progetto di GPU Computing
-Il seguente progetto riguarda un'implementazione CUDA del primo libro di Peter Shirley, Ray Tracing in One Weekend.
+Il seguente progetto riguarda un'implementazione CUDA del primo libro di Peter Shirley, Ray Tracing in One Weekend. L'implementazione GPU è basata sull'articolo [https://developer.nvidia.com/blog/accelerated-ray-tracing-cuda/](https://developer.nvidia.com/blog/accelerated-ray-tracing-cuda/).
 Per compilare il progetto è necessario avere installato il toolkit CUDA e Make. E' necessario anche cambiare la prima riga del Makefile con la compute capability della propria GPU.
 Per eseguire il progetto eseguire il comando `make run`, passando eventuali opzioni con la variabile `ARGS`. Per esempio, per eseguire il ray tracer con 1000 sample per pixel, lanciare il comando `make run ARGS="-n 1000"`. Gli argomenti validi sono i seguenti:
 
